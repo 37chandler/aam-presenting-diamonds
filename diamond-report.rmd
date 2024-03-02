@@ -1,0 +1,173 @@
+---
+title: "Diamond Supplier Report"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+html_document:
+    toc: true
+    toc_depth: 6
+    number_sections: true
+    toc_float: true
+    code_folding: hide
+    theme: flatly
+    code_download: true
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(error = TRUE)
+
+library(tidyverse)
+library(scales)
+
+d <- read_tsv("diamond-data.txt")
+```
+
+## Introduction
+
+In business, a common saying is "no good deed goes unpunished," humorously noting how success in one area often leads to increased expectations in others. This has been your experience after your comparative analysis revealed that Supplier B’s prices were reasonable, considering they supplied larger diamonds than Suppliers A and C. 
+
+Your boss, the director of product analytics, loved the analysis where 
+you uncovered that Supplier B's prices were fair, it's just that they had 
+larger diamonds than A and C. And she shared that analysis
+with the product managers of a few different verticals and the full jewelry 
+team. 
+
+Responding to this interest, you are tasked with demystifying your findings and the underpinning model—referred to as `lm_final`—for a broader audience, particularly the jewelry team. Teamed up with a seasoned data scientist, you've refined `lm_final` to not only satisfy statistical rigor but also cater to practical business insights.
+
+This assignment challenges you to translate the complex facets of your analysis into insights that resonate with non-experts. It's an exercise in bridging data science with business acumen, honing your ability to communicate technical findings in an accessible manner. Whether through a detailed report or presentation, your goal is to illuminate the intriguing patterns and implications discovered through your analysis. Use the principles discussed in this week's lecture to respond to specific questions outlined below, ensuring clarity and thoroughness in your explanations.
+
+## Model Building
+
+```{r}
+
+# Convert to factors
+d <- d %>% 
+  mutate(
+    clarity = fct_reorder(clarity,price),
+    cut = fct_reorder(cut,price),
+    color = fct_reorder(color,price)
+  )
+
+# To make life easier, let's collapse clarity and color to fewer levels
+d <- d %>%
+  mutate(
+    grp_clarity = case_when(
+      clarity %in% c("IF", "VVS1", "VVS2") ~ "High Clarity",
+      clarity %in% c("VS1", "VS2") ~ "Medium Clarity",
+      clarity %in% c("SI1", "SI2", "I1") ~ "Low Clarity",
+      TRUE ~ as.character(clarity)  # This line handles any unexpected categories
+    ),
+    grp_color = case_when(
+      color %in% c("D", "E") ~ "High Color",
+      color %in% c("F", "G") ~ "Medium Color",
+      color %in% c("H", "I", "J") ~ "Low Color"
+    )
+  ) %>% 
+  mutate(grp_color = fct_reorder(grp_color,price),
+         grp_clarity = fct_reorder(grp_clarity,price))
+
+
+# This could have been your original model
+lm_base <- lm(price ~ grp_clarity + grp_color + cut + carat + supplier ,
+              data=d)
+
+# And here's the final model you came up with. This model balances
+# the needs of the business with statistical accuracy. 
+lm_final <- lm(price ~ grp_clarity*grp_color + grp_color*carat + cut + supplier,
+          data=d)
+
+#anova(lm_base,lm_final)
+```
+
+
+## Model Explanation
+
+<!--
+  As a reminder, this is a Markdown comment, so it doesn't appear in the
+  knitted HTML. 
+  
+  Please make sections for each one of these questions or topics. Explore
+  the idea to an extent that you think makes sense. These answers don't
+  have to be super long. Remember you're writing for an audience 
+  that is good with numbers but maybe don't know technical statistical
+  terms very well.
+  
+  1. Overall Assessment of Model Performance
+  2. Explain the terms in the model related to "cut".
+  3. How do color and carat interact? 
+  4. How do color and clarity interact? 
+  5. How important are the interaction terms? 
+  6. Ignoring carat, what aspect of a diamond is the most important to determining price?
+  7. Refit the model on 75% of the data and predict the remaining 25%. Which 
+     diamonds do you do the best on? Which ones do you do the worst on? You can
+     talk about individual diamonds, but we're more interested in any patterns 
+     you find. (I've made this section for you to get you started.)
+     
+     
+  General Tips:
+
+  * Keep It Simple: Use everyday language to explain statistical concepts, avoiding jargon as much as possible.
+  * Use Visuals: Graphs and charts can convey complex ideas more easily than text, making your explanations
+    clearer to a non-technical audience.
+  * Offer Examples: Provide examples from the data to make abstract concepts tangible.
+  * Be Concise: Given the non-technical audience, focus on clear, 
+    direct explanations without overloading on details.  
+
+
+-->
+
+**Your work will go in this section. Delete this message.**
+
+
+
+### 7. Testing on a holdout sample
+
+Let's refit the model on a sample of the data so that we can assess performance
+on the portion that's held out. 
+
+```{r}
+set.seed(20240301)
+
+training_idx <- sample(nrow(d),size=round(nrow(d)*0.75),replace=F)
+testing_idx <- (1:nrow(d))[!(1:nrow(d)) %in% training_idx]
+training_data <- d[training_idx,]
+testing_data <- d[testing_idx,]
+
+refit_final <- update(lm_final,data=training_data)
+
+# Now take it from here!
+
+```
+
+
+
+
+
+## Appendix: Description of the Diamonds Dataset
+
+Our diamonds dataset is a comprehensive collection diamond data from our suppliers, 
+representing various attributes of a large number of diamonds. 
+The dataset includes the following attributes:
+
+- `Carat`: Numeric. Represents the weight of the diamond, measured in carats. A higher carat number indicates a heavier diamond.
+
+- `Cut`: Categorical. Indicates the quality of the cut of the diamond, which affects its symmetry, brightness, and overall appearance. The categories include Fair, Good, Very Good, Premium, and Ideal, with Ideal being the highest quality.
+
+- `Color`: Categorical. Denotes the color grade of the diamond, which ranges from J (lowest grade, more color) to D (highest grade, colorless). The grading scale moves from a noticeable color to colorless.
+
+- `Clarity`: Categorical. Describes the clarity of the diamond, which refers to the absence of inclusions and blemishes. The categories range from I1 (Inclusions 1, lowest clarity) to IF (Internally Flawless, highest clarity).
+
+- `Depth`: Numeric. The depth percentage of the diamond, calculated as the ratio of the diamond's total depth (from table to culet) to its average diameter.
+
+- `Table`: Numeric. Refers to the width of the top facet of the diamond, known as the table, relative to the widest point of the diamond. It is expressed as a percentage.
+
+- `Price`: Numeric. The price of the diamond in US dollars.
+
+- `X`: Numeric. The length of the diamond in millimeters.
+
+- `Y`: Numeric. The width of the diamond in millimeters.
+
+- `Z`: Numeric. The depth of the diamond in millimeters.
+
+- `Supplier`: Categorical. Represents the supplier of the diamonds to a major online marketplace (e.g., Amazon). Each diamond is sourced from one of several suppliers, each with varying reputations and qualities of service. The suppliers are anonymized and labeled as "Supplier A", "Supplier B", "Supplier C", etc.
+

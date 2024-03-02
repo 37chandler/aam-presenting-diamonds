@@ -1,3 +1,9 @@
+.DS_Store
+*solution*
+
+# Keeping mine out. 
+aam-presenting-diamonds.Rproj 
+
 # History files
 .Rhistory
 .Rapp.history
