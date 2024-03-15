@@ -44,9 +44,10 @@ This assignment challenges you to translate the complex facets of your analysis 
 d <- d %>% 
   mutate(
     clarity = fct_reorder(clarity,price),
-    cut = fct_reorder(cut,price),
+    cut = fct_relevel(cut,c("Fair","Good","Very Good","Premium","Ideal")),
     color = fct_reorder(color,price)
   )
+
 
 # To make life easier, let's collapse clarity and color to fewer levels
 d <- d %>%
@@ -58,12 +59,12 @@ d <- d %>%
       TRUE ~ as.character(clarity)  # This line handles any unexpected categories
     ),
     grp_color = case_when(
-      color %in% c("D", "E") ~ "High Color",
+      color %in% c("D", "E") ~ "Low Color",
       color %in% c("F", "G") ~ "Medium Color",
-      color %in% c("H", "I", "J") ~ "Low Color"
+      color %in% c("H", "I", "J") ~ "High Color"
     )
   ) %>% 
-  mutate(grp_color = fct_reorder(grp_color,price),
+  mutate(grp_color = fct_relevel(grp_color,c("High Color","Medium Color","Low Color")),
          grp_clarity = fct_reorder(grp_clarity,price))
 
 
